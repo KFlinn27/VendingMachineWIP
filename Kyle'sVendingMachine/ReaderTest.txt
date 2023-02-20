@@ -1,0 +1,5 @@
+CH|C2|Flat Test|10.80|T
+SR|S2|Dylan's Shoes|2.70|F
+HC|H1|Bob's Burgers|2.35|T
+LI|L5|Dracula Piller|1.11|F
+
