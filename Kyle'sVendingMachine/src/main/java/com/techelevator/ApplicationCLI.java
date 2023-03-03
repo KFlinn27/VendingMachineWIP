@@ -3,54 +3,72 @@ package com.techelevator;
 import com.techelevator.filereader.InventoryFileReader;
 import com.techelevator.filereader.LogFileWriter;
 import com.techelevator.filereader.SalesReport;
-import com.techelevator.items.Item;
 import com.techelevator.management.Customer;
-import com.techelevator.management.InventorySalesTracker;
+import com.techelevator.management.MachineInventory;
 
 import java.math.BigDecimal;
-import java.util.*;
 
 public class ApplicationCLI {
+    private Menu menu;
+    private LogFileWriter auditLogger;
+    private SalesReport salesReport;
+    private InventoryFileReader inventoryFileReader;
+    private InventoryFileReader salesFileReader;
+    private MachineInventory inventory;
 
-    // probably should leave this method alone... and go do stuff in the run method....
     public static void main(String[] args) {
         ApplicationCLI cli = new ApplicationCLI();
         cli.run();
     }
 
-    /**
-     * This is the main method that controls the flow of the program.. Probably could look at the review code for ideas of what to put here...
-     */
+    private ApplicationCLI() {
+        this.menu = new Menu();
+        //audit log actions to desired document
+        this.auditLogger = new LogFileWriter("Log.txt");
+
+        //read in an inventory for the machine, done once per run of the application
+        inventoryFileReader = new InventoryFileReader("inventory.csv");
+        inventory = new MachineInventory(inventoryFileReader.makeInventory());
+
+        //read in an inventory that represents the sales report csv file
+        salesFileReader = new InventoryFileReader("TotalSales.rpt");
+        salesReport = new SalesReport(salesFileReader.makeSalesInventory(), "TotalSales.rpt");
+    }
+
     public void run() {
-        Menu menu = new Menu();
-        InventoryFileReader inventoryFileReader = new InventoryFileReader("inventory.csv");
-        LogFileWriter auditLogger = new LogFileWriter("Log.txt");
-        InventorySalesTracker inventory = new InventorySalesTracker(inventoryFileReader.makeInventory());
-        InventoryFileReader salesFileReader = new InventoryFileReader("TotalSales.rpt");
-        SalesReport salesReport = new SalesReport(salesFileReader.makeSalesInventory(), "TotalSales.rpt");
 
         while (true) {
             int choice = menu.firstMenuMessage();
             if (choice == 1) {
-                inventory.printInventory();
+
+                //Here we want to print the current available inventory of the machine. Accounting properly for
+                //any purchases made by users
+                showInventory();
+
             } else if (choice == 2) {
+
+                //Instantiate a customer to use during this portion of the program
                 Customer customer = new Customer(inventoryFileReader.makeInventory());
+
+                //This while loop maintains the customer interaction, allowing them to deposit, purchase and checkout
                 while (true) {
+
+                    //Give user options, return their choice as an integer
                     int customerOperation = menu.makeSaleMessage(customer);
+
+                    //If 1 is returned, provide them the method to attempt a deposit
                     if (customerOperation == 1) {
-                        depositAction(menu, customer, auditLogger);
-                    } else if (customerOperation == 2) {
-                        inventory.printInventory();
-                        System.out.println();
-                        String chosenID = menu.getID();
-                        boolean hasProductFromChosenID = inventory.getAccessibleInventory().containsKey(chosenID);
-                        if (hasProductFromChosenID) {
-                            validID(menu, inventory, chosenID, auditLogger, customer, salesReport);
-                        } else {
-                            System.out.println("That ID is not valid.");
-                        }
-                    } else {
-                        closingOperations(auditLogger, customer);
+                        depositAction(customer);
+                    }
+
+                    //If 2 is returned, provide them the method to handle a purchase
+                    else if (customerOperation == 2) {
+                        makeSale(customer);
+                    }
+
+                    //Else we close their account, performing all actions involved with cashingout a customer
+                    else {
+                        closingOperations(customer);
                         break;
                     }
                 }
@@ -64,42 +82,66 @@ public class ApplicationCLI {
         salesReport.salesReportWrite();
     }
 
-    public void closingOperations(LogFileWriter auditLogger, Customer customer) {
-        auditLogger.balanceAudit(customer.getBalance());
-        customer.printReceipt();
-
-        //Refactored printChange, need to implement once both users push to a merged state
-        System.out.println(customer.printChangeStream());
+    /*Helper method that prints the current inventory.*/
+    public void showInventory() {
+        menu.printInventory(inventory.getInventory());
     }
 
-    public void validID(Menu menu, InventorySalesTracker inventory, String chosenID, LogFileWriter auditLogger, Customer customer,
-    SalesReport salesReport){
-
-        int quantityChosen = menu.quantityChosen();
-        boolean quantityAvailable = (inventory.getAccessibleInventory().get(chosenID).getQuantity() >= quantityChosen && quantityChosen > 0);
-        BigDecimal costOfItems = BigDecimal.valueOf(quantityChosen).multiply(inventory.getAccessibleInventory().get(chosenID).getPrice());
-        int hasEnoughFunds = customer.getBalance().compareTo(costOfItems);
-        boolean hasFunds = hasEnoughFunds >= 0;
-
-        if (quantityAvailable && hasFunds) {
-            customer.addItemToCart(inventory.getAccessibleInventory().get(chosenID), quantityChosen, costOfItems);
-            inventory.removeItem(chosenID, quantityChosen);
-            //Do audit log
-            auditLogger.purchaseAudit(quantityChosen, inventory.getAccessibleInventory().get(chosenID).getName(), chosenID, costOfItems, customer.getBalance());
-            salesReport.saleReportAdd(quantityChosen, inventory.getAccessibleInventory().get(chosenID).getName(), chosenID, costOfItems);
-        } else if (!quantityAvailable) {
-            System.out.println("There's not enough quantity.");
-        } else if (!hasFunds) {
-            System.out.println("You're broke!!");
+    /*This method handles the deposit action available to the customer.*/
+    public void depositAction(Customer customer) {
+        int deposit = menu.getDeposit();
+        BigDecimal depositBD = new BigDecimal(deposit);
+        //If customer deposit method accepted BigDecimal we can confirm action and log
+        if (customer.deposit(depositBD)) {
+            auditLogger.depositAudit(depositBD, customer.getBalance());
+            menu.depositSuccessfulMessage();
+        } else if (deposit != 0) {
+            menu.depositUnsuccessfulMessage();
         } else {
-            System.out.println("There was an error. Please try again.");
+            System.out.println();
         }
     }
 
-    public void depositAction(Menu menu, Customer customer, LogFileWriter auditLogger){
-        int deposit = menu.getDeposit(customer.getBalance());
-        BigDecimal depositBD = new BigDecimal(deposit);
-        customer.addToBalance(depositBD);
-        auditLogger.depositAudit(depositBD, customer.getBalance());
+    /*This method handle each purchase the customer attempts to make.*/
+    private void makeSale(Customer customer) {
+        showInventory();
+        String chosenSKU = menu.getSKU();
+        boolean hasProductFromChosenID = inventory.idExists(chosenSKU);
+        if (hasProductFromChosenID) {
+            validSKU(chosenSKU, customer);
+        } else {
+            menu.inValidIdMsg();
+        }
     }
+
+    /*This method handles validating the selected SKU*/
+    public void validSKU(String chosenSKU, Customer customer) {
+
+        int quantityChosen = menu.quantityChosen();
+        boolean quantityAvailable = (inventory.quantityOfSku(chosenSKU) >= quantityChosen && quantityChosen > 0);
+        BigDecimal costOfItems = BigDecimal.valueOf(quantityChosen).multiply(inventory.priceOfSku(chosenSKU));
+        boolean customerCanAfford = customer.getBalance().compareTo(costOfItems) >= 0;
+        boolean purchasePossible = quantityAvailable && customerCanAfford;
+
+        if (purchasePossible) {
+            customer.addItemToCart(inventory.getAccessibleInventory().get(chosenSKU), quantityChosen, costOfItems);
+            inventory.removeItem(chosenSKU, quantityChosen);
+            auditLogger.purchaseAudit(quantityChosen, inventory.nameOfSku(chosenSKU), chosenSKU, costOfItems, customer.getBalance());
+            salesReport.saleReportAdd(quantityChosen, inventory.nameOfSku(chosenSKU), chosenSKU, costOfItems);
+        } else if (!quantityAvailable) {
+            menu.notEnoughQuantityAvailable();
+        } else {
+            menu.notEnoughBalanceToPurchase();
+        }
+    }
+
+    /*This method reset the program as a use decides to finalize their transaction.*/
+    public void closingOperations(Customer customer) {
+        auditLogger.balanceAudit(customer.getBalance());
+        menu.printReceipt(customer.getCustomerCart());
+        menu.printChangeStream(customer.getBalance());
+    }
+
+
+
 }

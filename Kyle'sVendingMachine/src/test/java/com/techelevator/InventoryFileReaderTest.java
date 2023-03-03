@@ -6,11 +6,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.math.BigDecimal;
 import java.util.Map;
-import java.util.Scanner;
 
 public class InventoryFileReaderTest {
     private InventoryFileReader inventoryFileReader;
@@ -18,8 +16,8 @@ public class InventoryFileReaderTest {
 
     @Before
     public void setup() throws FileNotFoundException {
-    inventoryFileReader = new InventoryFileReader("ReaderTest.txt");
-    salesFileReader = new InventoryFileReader("TestSalesReport.txt");
+    inventoryFileReader = new InventoryFileReader("inventoryTest.txt");
+    salesFileReader = new InventoryFileReader("testSales.txt");
 
     }
     // name , wrapped, quantity, price, sku

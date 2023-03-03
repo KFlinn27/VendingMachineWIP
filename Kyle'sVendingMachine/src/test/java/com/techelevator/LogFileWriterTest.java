@@ -28,24 +28,27 @@ public class LogFileWriterTest {
     public void deposit_audit_test(){
         logFileWriter.depositAudit(BigDecimal.valueOf(100), BigDecimal.valueOf(200));
         printWriter.println();
-        String expected = scanner.nextLine().substring(19);
-        Assert.assertEquals("PM MONEY RECEIVED: $100.00 $200.00", expected);
+        String expected = scanner.nextLine();
+        expected = expected.substring(expected.indexOf("MONEY"));
+        Assert.assertEquals("MONEY RECEIVED: $100.00 $200.00", expected);
     }
 
     @Test
     public void purchase_audit_test(){
         logFileWriter.purchaseAudit(10,"Name", "L5", BigDecimal.valueOf(100), BigDecimal.valueOf(200));
         printWriter.println();
-        String expected = scanner.nextLine().substring(19);
-        Assert.assertEquals("PM 10 Name L5 $100.00 $200.00", expected);
+        String expected = scanner.nextLine();
+        expected = expected.substring(expected.indexOf("10"));
+        Assert.assertEquals("10 Name L5 $100.00 $200.00", expected);
     }
 
     @Test
     public void balance_audit_test(){
         logFileWriter.balanceAudit(BigDecimal.valueOf(100));
         printWriter.println();
-        String expected = scanner.nextLine().substring(19);
-        Assert.assertEquals("PM CHANGE GIVEN: $100.00 $0.00", expected);
+        String expected = scanner.nextLine();
+        expected = expected.substring(expected.indexOf("CHANGE"));
+        Assert.assertEquals("CHANGE GIVEN: $100.00 $0.00", expected);
     }
 
 

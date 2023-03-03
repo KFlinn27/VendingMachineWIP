@@ -1,0 +1,4 @@
+S3|Test Tart|25|$21.25
+C3|Truffle|20|$21.00
+L5|Blarg|65|$300.00
+S1|Gummy Flys|150|$20.00

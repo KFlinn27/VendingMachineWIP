@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.TreeMap;
 
 /**
  * This class would be a GREAT place to read in a file and return a data structure matching the one in
@@ -22,8 +23,8 @@ public class InventoryFileReader {
         this.fileToRead = new File(path);
     }
 
-    public Map<String, Item> makeInventory() {
-        Map<String, Item> itemMap = new HashMap<>();
+    public TreeMap<String, Item> makeInventory() {
+        TreeMap<String, Item> itemMap = new TreeMap<>();
         try (Scanner fileScanner = new Scanner(fileToRead)) {
 
             while (fileScanner.hasNextLine()) {

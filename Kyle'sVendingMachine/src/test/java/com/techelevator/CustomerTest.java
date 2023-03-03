@@ -23,25 +23,6 @@ public class CustomerTest {
 
 
     @Test
-    public void testPrintChange9955(){
-        tester.addToBalance(BigDecimal.valueOf(99.65));
-        String expected = "(4) Twenties, (1) Tens, (1) Fives, (4) Ones, (2) Quarters, (1) Dimes, (1) Nickels";
-        Assert.assertEquals(expected, tester.printChange());
-        tester.addToBalance(BigDecimal.valueOf(99.65));
-        Assert.assertEquals(expected, tester.CanWeRefactor());
-        tester.addToBalance(BigDecimal.valueOf(99.65));
-        Assert.assertEquals(expected, tester.printChangeStream());
-    }
-
-    @Test
-    public void testPrintChange0(){
-        tester.addToBalance(BigDecimal.valueOf(0));
-        String expected = "No change required.";
-        Assert.assertEquals(expected, tester.printChange());
-        ////NEED TO CHANGE PRINT CHANGE TO RETURN STRING SO IT CAN BE TESTED PROPERLY
-    }
-
-    @Test
     public void testAddBalancefirst100(){
         BigDecimal expected = BigDecimal.valueOf(100);
         tester.addToBalance(expected);

@@ -9,6 +9,7 @@ import org.junit.Test;
 import java.math.BigDecimal;
 
 public class ChocolatesTest {
+    //TODO go back and write more tests to test out newest additions
     private Chocolates chocolates;
 
 
